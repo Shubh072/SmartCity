@@ -1,0 +1,9 @@
+area,waste_risk_score,water_risk_score,disease_risk_score,final_risk_score,cross_domain_alert
+Hingne Khurd,35.688538544373245,100.0,0.0,52.49098849053063,⚠️ INFRASTRUCTURE ALERT: Severe water pipe anomalies detected.
+Baner,99.99999977751389,0.0,0.0,34.99999992212986,Normal
+Shivajinagar,27.005869914036683,33.33333333333333,33.33,31.11788780324617,Normal
+Kalyani Nagar,50.08470329468656,0.0,0.0,17.529646153140295,Normal
+Kothrud,46.46246328408501,0.0,0.0,16.261862149429753,Normal
+Viman Nagar,32.31981191150256,0.0,0.0,11.311934169025896,Normal
+Koregaon Park,0.0,0.0,33.33,8.3325,Normal
+Wakad,14.290646962233714,0.0,0.0,5.0017264367818,Normal

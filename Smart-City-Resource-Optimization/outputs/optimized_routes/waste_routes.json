@@ -1,0 +1,39 @@
+{
+    "route": [
+        "Depot",
+        "Viman Nagar",
+        "Wakad",
+        "Shivajinagar",
+        "Kalyani Nagar",
+        "Kothrud",
+        "Koregaon Park",
+        "Hingne Khurd",
+        "Baner",
+        "Depot"
+    ],
+    "total_distance_km": 46.1,
+    "bins_collected": 20,
+    "truck_load_percentage": 100.0,
+    "selected_bin_ids": [
+        "BIN_12380",
+        "BIN_5295",
+        "BIN_7743",
+        "BIN_11159",
+        "BIN_14622",
+        "BIN_9687",
+        "BIN_14989",
+        "BIN_7224",
+        "BIN_4477",
+        "BIN_13245",
+        "BIN_7512",
+        "BIN_8000",
+        "BIN_8703",
+        "BIN_1688",
+        "BIN_0180",
+        "BIN_0660",
+        "BIN_4410",
+        "BIN_9064",
+        "BIN_2022",
+        "BIN_7652"
+    ]
+}
