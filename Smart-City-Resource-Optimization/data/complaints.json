@@ -1,1 +1,18 @@
-[]
+[
+    {
+        "id": 1772347121,
+        "subject": "water leakage",
+        "area": "Shivajinagar",
+        "society": "near shivaji nagar railway station",
+        "severity": 3,
+        "status": "Open",
+        "messages": [
+            {
+                "role": "Citizen",
+                "text": "I would like to bring to your kind attention a serious issue of continuous water leakage near Shivaji Nagar Railway Station. The leakage has been ongoing for several days, resulting in a large amount of clean water being wasted daily.\n\nDue to this leakage, water is accumulating on the road, causing inconvenience to pedestrians, commuters, and nearby shopkeepers. It has also led to slippery road conditions, increasing the risk of accidents and contributing to unhygienic surroundings.\n\nI kindly request the concerned department to inspect the site at the earliest and carry out the necessary repair work to prevent further wastage of water and public inconvenience.\n\nI hope the authorities will take prompt action in this matter in the interest of public safety and water conservation.",
+                "time": "Sun Mar  1 12:08:41 2026"
+            }
+        ],
+        "last_updated": "Sun Mar  1 12:08:41 2026"
+    }
+]
