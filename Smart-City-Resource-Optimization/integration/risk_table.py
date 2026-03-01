@@ -17,7 +17,7 @@ def load_all_data(base_path: str = ""):
     disease_df = load_and_preprocess(disease_path, time_col="date")
     return waste_df, water_df, disease_df
 
-def generate_area_risk_table(waste_df: pd.DataFrame, water_df: pd.DataFrame, disease_df: pd.DataFrame) -> pd.DataFrame:
+def generate_area_risk_table(waste_df: pd.DataFrame, water_df: pd.DataFrame, disease_df: pd.DataFrame, base_path: str = "") -> pd.DataFrame:
     """
     Fuses risk across the three domains to create a Unified Area Risk Table.
     """
