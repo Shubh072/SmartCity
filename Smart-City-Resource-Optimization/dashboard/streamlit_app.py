@@ -43,7 +43,8 @@ st.set_page_config(page_title="Smart City Resource Optimization", layout="wide",
 USER_ROLES = {
     "superadmin": {"pass": "super123", "role": "Super Admin"},
     "admin": {"pass": "admin123", "role": "Admin"},
-    "user": {"pass": "user123", "role": "Citizen"}
+    "user": {"pass": "user123", "role": "Citizen"},
+    "dev": {"pass": "dev123", "role": "Developer"}
 }
 
 if 'authenticated' not in st.session_state:
@@ -276,23 +277,31 @@ if st.session_state['role'] in ["Super Admin", "Admin"]:
 if st.session_state['role'] == "Super Admin":
     tabs_list.append("💰 City CFO (ROI)")
     tabs_list.append("📥 Admin Inbox")
+    tabs_list.append("🛠️ Dev Requests")
+if st.session_state['role'] == "Developer":
+    tabs_list = ["🗺️ City Map", "🏥 Public Health", "📟 Developer Control"]
 
 tabs = st.tabs(tabs_list)
 
 # --- Complaint Data Persistence ---
-def load_complaints():
-    path = os.path.join(project_root, "data/complaints.json")
+def load_json_data(filename):
+    path = os.path.join(project_root, f"data/{filename}")
     if os.path.exists(path):
         with open(path, "r") as f:
             return json.load(f)
     return []
 
-def save_complaints(complaints):
-    path = os.path.join(project_root, "data/complaints.json")
-    # Ensure data folder exists
+def save_json_data(data, filename):
+    path = os.path.join(project_root, f"data/{filename}")
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w") as f:
-        json.dump(complaints, f, indent=4)
+        json.dump(data, f, indent=4)
+
+def load_complaints(): return load_json_data("complaints.json")
+def save_complaints(c): save_json_data(c, "complaints.json")
+
+def load_dev_requests(): return load_json_data("dev_requests.json")
+def save_dev_requests(r): save_json_data(r, "dev_requests.json")
 
 
 # Map tab is always first index if citizen, but we need to track index correctly
@@ -555,4 +564,77 @@ for i, tab_name in enumerate(tabs_list):
                                 c['status'] = "Closed"
                                 save_complaints(complaints)
                                 st.success("Thread closed.")
+                                st.rerun()
+
+        elif "Dev Requests" in tab_name:
+            st.subheader("🛠️ Technical Add-on Requests")
+            st.markdown("Direct line of communication with the Development Team for app evolution.")
+            
+            requests = load_dev_requests()
+            
+            with st.form("new_dev_request"):
+                title = st.text_input("Feature Title / Issue")
+                priority = st.selectbox("Priority", ["Normal", "High", "Critical"])
+                desc = st.text_area("Detailed Description of Add-on")
+                if st.form_submit_button("Send to Developer"):
+                    if title and desc:
+                        new_r = {
+                            "id": int(time.time()),
+                            "title": title,
+                            "priority": priority,
+                            "status": "Submitted",
+                            "chat": [{"role": "Super Admin", "msg": desc, "time": time.ctime()}],
+                            "last_updated": time.ctime()
+                        }
+                        requests.append(new_r)
+                        save_dev_requests(requests)
+                        st.success("Request sent to Dev Panel.")
+                    else: st.error("Please fill all fields.")
+            
+            st.divider()
+            for r in reversed(requests):
+                with st.expander(f"[{r['priority']}] {r['title']} - {r['status']}"):
+                    for msg in r['chat']:
+                        st.markdown(f"**{msg['role']}:** {msg['msg']}")
+                        st.caption(msg['time'])
+                    
+                    rep = st.text_input("Follow up question...", key=f"rep_s_{r['id']}")
+                    if st.button("Send Message", key=f"btn_s_{r['id']}"):
+                        if rep:
+                            r['chat'].append({"role": "Super Admin", "msg": rep, "time": time.ctime()})
+                            save_dev_requests(requests)
+                            st.rerun()
+
+        elif "Developer Control" in tab_name:
+            st.subheader("💻 Developer Feature Roadmap")
+            st.markdown("Manage application add-ons and feature requests from Super Administration.")
+            
+            requests = load_dev_requests()
+            if not requests:
+                st.info("No pending requests from Super Admin.")
+            else:
+                for r in reversed(requests):
+                    with st.expander(f"REQ-{r['id']} | {r['title']} ({r['priority']})", expanded=True):
+                        st.write(f"**Current Status:** {r['status']}")
+                        for msg in r['chat']:
+                            st.markdown(f"**{msg['role']}:** {msg['msg']}")
+                            st.caption(msg['time'])
+                        
+                        st.divider()
+                        col1, col2 = st.columns([3, 1])
+                        with col1:
+                            dev_rep = st.text_area("Technical Response / Status Update", key=f"dev_rep_{r['id']}")
+                            if st.button("Update Admin", key=f"dev_btn_{r['id']}"):
+                                if dev_rep:
+                                    r['chat'].append({"role": "Developer", "msg": dev_rep, "time": time.ctime()})
+                                    r['last_updated'] = time.ctime()
+                                    save_dev_requests(requests)
+                                    st.success("Admin notified.")
+                                    st.rerun()
+                        with col2:
+                            new_status = st.selectbox("New Status", ["In Progress", "Testing", "Completed"], key=f"status_{r['id']}")
+                            if st.button("Change Status", key=f"status_btn_{r['id']}"):
+                                r['status'] = new_status
+                                save_dev_requests(requests)
+                                st.success("Status updated.")
                                 st.rerun()
