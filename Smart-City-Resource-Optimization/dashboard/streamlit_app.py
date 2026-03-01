@@ -1,9 +1,9 @@
 import sys
 import os
 
-# Robustly get the root of the project which is two directories up from app.py
+# Robustly get the root of the project which is one directory up from app.py
 current_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.abspath(os.path.join(current_dir, "../../"))
+project_root = os.path.abspath(os.path.join(current_dir, ".."))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
@@ -19,6 +19,7 @@ from integration.risk_table import load_all_data, generate_area_risk_table, get_
 from waste.routing import calculate_bin_priority, get_high_priority_bins
 from water.anomaly_demand import analyze_peak_usage, train_leak_detection_model, train_demand_prediction_model
 from disease.trend_alerts import aggregate_disease_data, generate_disease_alerts
+from integration.notifier import send_emergency_sms, send_emergency_email
 
 st.set_page_config(page_title="Smart City Resource Optimization", layout="wide", page_icon="🌍")
 
@@ -63,6 +64,35 @@ def get_dashboard_data():
 data = get_dashboard_data()
 
 # -----------------
+# Citizen Simulation Sidebar
+# -----------------
+with st.sidebar:
+    st.header("📲 Citizen App")
+    st.markdown("Simulate citizen reports from the ground.")
+    if st.button("🚨 Report Overflowing Bin in Baner", use_container_width=True):
+        st.session_state['citizen_report_baner'] = True
+        st.success("Report received!")
+    if st.button("🔄 Reset Reports", use_container_width=True):
+        st.session_state['citizen_report_baner'] = False
+        st.rerun()
+
+# Inject Citizen Data
+if st.session_state.get('citizen_report_baner', False):
+    mock_bin = pd.DataFrame([{
+        'bin_id': 'BIN-CITIZEN-999',
+        'area': 'Baner',
+        'fill_percentage': 100.0,
+        'overflow_risk': 1,
+        'population_density': 8000,
+        'timestamp': pd.Timestamp.now(),
+        'priority': 99.9
+    }])
+    data["waste"]["high_prio"] = pd.concat([mock_bin, data["waste"]["high_prio"]], ignore_index=True)
+    data["risk_table"].loc[data["risk_table"]['area'] == 'Baner', 'final_risk_score'] = 95.0
+    data["risk_table"].loc[data["risk_table"]['area'] == 'Baner', 'cross_domain_alert'] = "🚨 CITIZEN REPORT: Overflowing Waste Emergency"
+
+
+# -----------------
 # Header Section
 # -----------------
 st.title("🏙️ Smart City Resource Optimization Brain")
@@ -92,15 +122,60 @@ with col2:
     if len(critical_alerts) > 0:
         for _, row in critical_alerts.iterrows():
             st.error(f"**{row['area']}**: {row['cross_domain_alert']}")
+            
+        st.markdown("---")
+        col_btn1, col_btn2 = st.columns(2)
+        
+        with col_btn1:
+            if st.button("📱 Dispatch Emergency SMS", use_container_width=True):
+                top_alert = critical_alerts.iloc[0]
+                msg = f"SMART CITY ALERT ({top_alert['area']}): {top_alert['cross_domain_alert']}"
+                with st.spinner("Dispatching via Twilio..."):
+                    success = send_emergency_sms(msg)
+                    if success:
+                        st.success("✅ SMS Alert Dispatched Successfully!")
+                    else:
+                        st.error("❌ Failed to send SMS. Check your credentials in .env.")
+                        
+        with col_btn2:
+            if st.button("📧 Dispatch Emergency Email", use_container_width=True):
+                top_alert = critical_alerts.iloc[0]
+                msg = f"SMART CITY ALERT ({top_alert['area']}): {top_alert['cross_domain_alert']}"
+                with st.spinner("Dispatching via SMTP..."):
+                    success = send_emergency_email(msg, subject=f"🚨 EMERGENCY: {top_alert['area']}")
+                    if success:
+                        st.success("✅ Email Alert Dispatched Successfully!")
+                    else:
+                        st.error("❌ Failed to send Email. Check your credentials in .env.")
     else:
         st.success("No critical cross-domain alerts at this time.")
 
 st.divider()
 
 # -----------------
+# AI Executive Summary
+# -----------------
+st.subheader("🤖 AI City Manager Narrative")
+critical_alerts_updated = data["risk_table"][data["risk_table"]['cross_domain_alert'] != "Normal"]
+
+if data["health_score"] > 85 and len(critical_alerts_updated) == 0:
+    summary = "**AI Assessment**: City infrastructure is operating at optimal efficiency. Resource allocation is balanced, and no critical anomalies are detected."
+elif len(critical_alerts_updated) > 0:
+    areas = ", ".join(critical_alerts_updated['area'].tolist())
+    summary = f"**AI Assessment**: Critical infrastructure intervention required in **{areas}** today. Cross-domain risk factors or citizen reports detected. Dispatching targeted emergency maintenance crews is highly recommended."
+else:
+    high_water = len(data['water']['anomalies'])
+    high_bins = len(data['waste']['high_prio'])
+    summary = f"**AI Assessment**: City health is moderately stable. Currently tracking {high_water} water pressure anomalies and {high_bins} priority waste bins for optimized routing. No immediate multi-domain emergencies."
+
+st.info(summary)
+
+st.divider()
+
+# -----------------
 # Main Tabs
 # -----------------
-tab1, tab2, tab3, tab4 = st.tabs(["🗺️ City Map", "🚛 Waste Routing", "💧 Water Infrastructure", "🏥 Public Health"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["🗺️ City Map", "🚛 Waste Routing", "💧 Water Infrastructure", "🏥 Public Health", "💰 City CFO (ROI)"])
 
 # Area mapping coordinates (Mock)
 area_coords = {
@@ -201,3 +276,46 @@ with tab4:
         filtered = data["disease"]["weekly"][data["disease"]["weekly"]['disease'] == selected_disease]
         fig3 = px.line(filtered, x='week_start', y='cases', color='area', title=f"{selected_disease} Trends")
         st.plotly_chart(fig3, use_container_width=True)
+
+with tab5:
+    st.subheader("City CFO: ROI & Environmental Impact")
+    st.markdown("Real-time calculation of savings generated by AI optimization vs. traditional operations.")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    # 1. Fuel Savings (Assuming 2km driven per bin normally)
+    standard_route_km = len(data["waste"]["prio"]) * 2 
+    if data["waste"]["route"]:
+        optimized_km = data["waste"]["route"]['total_distance_km']
+    else:
+        optimized_km = len(data["waste"]["high_prio"]) * 1.5
+        
+    km_saved = max(0, standard_route_km - optimized_km)
+    diesel_saved_liters = km_saved / 4.0 # Assumed truck mileage 4 km/l
+    money_saved_rs = diesel_saved_liters * 90 # 90 Rs/liter
+    
+    with col1:
+        st.metric(label="🚚 Daily Fleet Fuel Savings", value=f"₹ {money_saved_rs:,.0f}", delta=f"{diesel_saved_liters:,.1f} L Diesel Saved")
+        st.write(f"Avoided {km_saved:,.0f} km of unoptimized driving.")
+        
+    # 2. Water Saved (Assuming 1 leak = 24k L/day lost, 0.02 Rs/L processing cost)
+    leaks_prevented = len(data['water']['anomalies'])
+    liters_saved = leaks_prevented * 24000 
+    water_money_saved = liters_saved * 0.02 
+    
+    with col2:
+        st.metric(label="💧 Prevented Water Loss", value=f"₹ {water_money_saved:,.0f}", delta=f"{liters_saved:,.0f} Liters Retained")
+        st.write(f"Early detection of {leaks_prevented} pipeline anomalies.")
+        
+    # 3. Carbon/ESG (2.68 kg CO2 per liter of diesel)
+    co2_saved = diesel_saved_liters * 2.68
+    
+    with col3:
+        st.metric(label="🌲 Carbon Footprint Reduction", value=f"{co2_saved:,.1f} kg CO2", delta="ESG Boost")
+        st.write("Emissions prevented via AI routing.")
+        
+    st.divider()
+    st.markdown("### Total Projected Annual Savings")
+    annual_savings = (money_saved_rs + water_money_saved) * 365
+    st.success(f"## ₹ {annual_savings:,.0f} / year")
+    st.caption("Based on extrapolating today's AI optimization metrics across a 365-day operational window.")

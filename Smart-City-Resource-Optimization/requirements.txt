@@ -5,3 +5,6 @@ streamlit
 pydeck
 networkx
 plotly
+pydantic
+twilio
+python-dotenv
