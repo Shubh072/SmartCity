@@ -38,6 +38,16 @@ AREA_COORDS = {
 st.set_page_config(page_title="Smart City Resource Optimization", layout="wide", page_icon="🌍")
 
 # -----------------
+# Helper Functions
+# -----------------
+def safe_rerun():
+    """Compatibility helper for st.rerun (v1.27+) and st.experimental_rerun."""
+    if hasattr(st, "rerun"):
+        st.rerun()
+    else:
+        st.experimental_rerun()
+
+# -----------------
 # Authentication & RBAC
 # -----------------
 USER_ROLES = {
@@ -526,7 +536,7 @@ for i, tab_name in enumerate(tabs_list):
                                 c['messages'].append({"role": "Citizen", "text": new_reply, "time": time.ctime()})
                                 c['last_updated'] = time.ctime()
                                 save_complaints(complaints)
-                                st.rerun()
+                                safe_rerun()
 
         elif "Admin Inbox" in tab_name:
             st.subheader("📥 Smart City Grievance Center")
@@ -563,13 +573,13 @@ for i, tab_name in enumerate(tabs_list):
                                     c['last_updated'] = time.ctime()
                                     save_complaints(complaints)
                                     st.success("Reply posted.")
-                                    st.rerun()
+                                    safe_rerun()
                         with col2:
                             if st.button("Mark as Resolved", key=f"close_btn_{c['id']}"):
                                 c['status'] = "Closed"
                                 save_complaints(complaints)
                                 st.success("Thread closed.")
-                                st.rerun()
+                                safe_rerun()
 
         elif "Dev Requests" in tab_name:
             st.subheader("🛠️ Technical Add-on Requests")
@@ -635,11 +645,11 @@ for i, tab_name in enumerate(tabs_list):
                                     r['last_updated'] = time.ctime()
                                     save_dev_requests(requests)
                                     st.success("Admin notified.")
-                                    st.rerun()
+                                    safe_rerun()
                         with col2:
                             new_status = st.selectbox("New Status", ["In Progress", "Testing", "Completed"], key=f"status_{r['id']}")
                             if st.button("Change Status", key=f"status_btn_{r['id']}"):
                                 r['status'] = new_status
                                 save_dev_requests(requests)
                                 st.success("Status updated.")
-                                st.rerun()
+                                safe_rerun()
