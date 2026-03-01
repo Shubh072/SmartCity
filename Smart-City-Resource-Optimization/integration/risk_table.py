@@ -7,10 +7,14 @@ from waste.routing import calculate_bin_priority
 from water.anomaly_demand import train_leak_detection_model
 from disease.trend_alerts import generate_disease_alerts
 
-def load_all_data():
-    waste_df = load_and_preprocess("data/raw/pune_waste_management_dataset_15000_rows.csv")
-    water_df = load_and_preprocess("data/raw/water_pipeline_monitoring_dataset_15000_rows.csv", time_col="timestamp")
-    disease_df = load_and_preprocess("data/raw/clean_hospital_dataset_15000_rows.csv", time_col="date")
+def load_all_data(base_path: str = ""):
+    waste_path = os.path.join(base_path, "data/raw/pune_waste_management_dataset_15000_rows.csv")
+    water_path = os.path.join(base_path, "data/raw/water_pipeline_monitoring_dataset_15000_rows.csv")
+    disease_path = os.path.join(base_path, "data/raw/clean_hospital_dataset_15000_rows.csv")
+    
+    waste_df = load_and_preprocess(waste_path)
+    water_df = load_and_preprocess(water_path, time_col="timestamp")
+    disease_df = load_and_preprocess(disease_path, time_col="date")
     return waste_df, water_df, disease_df
 
 def generate_area_risk_table(waste_df: pd.DataFrame, water_df: pd.DataFrame, disease_df: pd.DataFrame) -> pd.DataFrame:

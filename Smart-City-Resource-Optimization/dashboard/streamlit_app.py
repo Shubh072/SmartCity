@@ -89,7 +89,7 @@ with st.sidebar:
 # -----------------
 @st.cache_data
 def get_dashboard_data():
-    waste_df, water_df, disease_df = load_all_data()
+    waste_df, water_df, disease_df = load_all_data(project_root)
     risk_table = generate_area_risk_table(waste_df, water_df, disease_df)
     health_score = get_city_health_score(risk_table)
     
@@ -99,8 +99,9 @@ def get_dashboard_data():
     
     # Try to load route if it exists
     route_data = None
-    if os.path.exists("outputs/optimized_routes/waste_routes.json"):
-        with open("outputs/optimized_routes/waste_routes.json", "r") as f:
+    route_path = os.path.join(project_root, "outputs/optimized_routes/waste_routes.json")
+    if os.path.exists(route_path):
+        with open(route_path, "r") as f:
             route_data = json.load(f)
             
     # Water Data

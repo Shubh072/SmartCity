@@ -1,4 +1,5 @@
 import os
+import streamlit as st
 from twilio.rest import Client
 from dotenv import load_dotenv
 import smtplib
@@ -20,14 +21,14 @@ def send_emergency_sms(message_body: str, to_phone: str = None) -> bool:
     Returns:
         bool: True if sent successfully, False otherwise.
     """
-    # Twilio credentials
-    account_sid = os.environ.get('TWILIO_ACCOUNT_SID')
-    auth_token = os.environ.get('TWILIO_AUTH_TOKEN')
-    from_phone = os.environ.get('TWILIO_FROM_PHONE')
+    # Twilio credentials (try os.environ, then st.secrets for Streamlit Cloud)
+    account_sid = os.environ.get('TWILIO_ACCOUNT_SID') or st.secrets.get('TWILIO_ACCOUNT_SID')
+    auth_token = os.environ.get('TWILIO_AUTH_TOKEN') or st.secrets.get('TWILIO_AUTH_TOKEN')
+    from_phone = os.environ.get('TWILIO_FROM_PHONE') or st.secrets.get('TWILIO_FROM_PHONE')
     
     # Fallback destination phone
     if not to_phone:
-        to_phone = os.environ.get('TWILIO_DESTINATION_PHONE')
+        to_phone = os.environ.get('TWILIO_DESTINATION_PHONE') or st.secrets.get('TWILIO_DESTINATION_PHONE')
 
     # Basic validation
     if not all([account_sid, auth_token, from_phone, to_phone]):
@@ -52,13 +53,13 @@ def send_emergency_email(message_body: str, subject: str = "SMART CITY EMERGENCY
     """
     Sends an email using SMTP (e.g., Gmail).
     """
-    smtp_server = os.environ.get('SMTP_SERVER', 'smtp.gmail.com')
-    smtp_port = int(os.environ.get('SMTP_PORT', 587))
-    sender_email = os.environ.get('SENDER_EMAIL')
-    sender_password = os.environ.get('SENDER_PASSWORD')
+    smtp_server = os.environ.get('SMTP_SERVER') or st.secrets.get('SMTP_SERVER', 'smtp.gmail.com')
+    smtp_port = int(os.environ.get('SMTP_PORT') or st.secrets.get('SMTP_PORT', 587))
+    sender_email = os.environ.get('SENDER_EMAIL') or st.secrets.get('SENDER_EMAIL')
+    sender_password = os.environ.get('SENDER_PASSWORD') or st.secrets.get('SENDER_PASSWORD')
     
     if not to_email:
-        to_email = os.environ.get('DESTINATION_EMAIL')
+        to_email = os.environ.get('DESTINATION_EMAIL') or st.secrets.get('DESTINATION_EMAIL')
         
     if not all([sender_email, sender_password, to_email]):
         print("Error: Missing email credentials in environment variables.")
