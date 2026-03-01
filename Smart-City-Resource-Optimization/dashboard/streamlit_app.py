@@ -89,7 +89,7 @@ with st.sidebar:
 # -----------------
 @st.cache_data
 def get_dashboard_data():
-    waste_df, water_df, disease_df = load_all_data(project_root)
+    waste_df, water_df, disease_df = load_all_data(base_path=project_root)
     risk_table = generate_area_risk_table(waste_df, water_df, disease_df)
     health_score = get_city_health_score(risk_table)
     
