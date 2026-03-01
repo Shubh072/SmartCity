@@ -1,5 +1,6 @@
-import sys
 import os
+import json
+import time
 
 # Robustly get the root of the project which is one directory up from app.py
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -267,13 +268,30 @@ st.divider()
 # -----------------
 # Main Tabs
 # -----------------
-tabs_list = ["🗺️ City Map", "🏥 Public Health", "🏆 Leaderboard"]
+tabs_list = ["🗺️ City Map", "🏥 Public Health", "🏆 Leaderboard", "📩 Support & Help"]
 if st.session_state['role'] in ["Super Admin", "Admin"]:
     tabs_list.extend(["🚛 Waste Routing", "💧 Water Infrastructure"])
 if st.session_state['role'] == "Super Admin":
     tabs_list.append("💰 City CFO (ROI)")
+    tabs_list.append("📥 Admin Inbox")
 
 tabs = st.tabs(tabs_list)
+
+# --- Complaint Data Persistence ---
+def load_complaints():
+    path = os.path.join(project_root, "data/complaints.json")
+    if os.path.exists(path):
+        with open(path, "r") as f:
+            return json.load(f)
+    return []
+
+def save_complaints(complaints):
+    path = os.path.join(project_root, "data/complaints.json")
+    # Ensure data folder exists
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as f:
+        json.dump(complaints, f, indent=4)
+
 
 # Map tab is always first index if citizen, but we need to track index correctly
 # A better way is to check the tab names in the loop
@@ -428,3 +446,111 @@ for i, tab_name in enumerate(tabs_list):
             annual_savings = (money_saved_rs + water_money_saved) * 365
             st.success(f"## ₹ {annual_savings:,.0f} / year")
             st.caption("Based on extrapolating today's AI optimization metrics across a 365-day operational window.")
+
+        elif "Support & Help" in tab_name:
+            st.subheader("📬 Citizen Support & Grievance Redressal")
+            st.markdown("Submit a complaint or track your active conversations with city administration.")
+            
+            complaints = load_complaints()
+            
+            # --- New Complaint Form ---
+            with st.expander("📝 Raise a New Complaint", expanded=len(complaints)==0):
+                with st.form("new_complaint"):
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        subject = st.text_input("Subject")
+                        area = st.selectbox("Area", list(AREA_COORDS.keys()))
+                    with col2:
+                        society = st.text_input("Society / Landmark")
+                        severity = st.slider("Severity Scale (0-5)", 0, 5, 2)
+                    
+                    message = st.text_area("Your Complaint")
+                    if st.form_submit_button("Submit Complaint"):
+                        if subject and message:
+                            new_c = {
+                                "id": int(time.time()),
+                                "subject": subject,
+                                "area": area,
+                                "society": society,
+                                "severity": severity,
+                                "status": "Open",
+                                "messages": [{"role": "Citizen", "text": message, "time": time.ctime()}],
+                                "last_updated": time.ctime()
+                            }
+                            complaints.append(new_c)
+                            save_complaints(complaints)
+                            st.success("Complaint submitted! Admins will respond shortly.")
+                            st.rerun()
+                        else:
+                            st.error("Please provide a subject and message.")
+
+            st.divider()
+            # --- My Conversations ---
+            st.write("### 💬 Active Conversations")
+            my_area = AREA_COORDS.keys() # In a real app we'd filter by logged in user ID
+            
+            # Show active chats
+            for c in reversed(complaints):
+                with st.chat_message("user"):
+                    st.write(f"**{c['subject']}** ({c['area']} - {c['society']})")
+                    st.caption(f"Status: {c['status']} | Severity: {c['severity']}")
+                    
+                    # Chat History
+                    for msg in c['messages']:
+                        with st.chat_message("user" if msg['role']=="Citizen" else "assistant"):
+                            st.markdown(f"**{msg['role']}:** {msg['text']}")
+                            st.caption(msg['time'])
+                    
+                    # Reply Box
+                    if c['status'] != "Closed":
+                        reply_key = f"reply_{c['id']}"
+                        new_reply = st.text_input("Send a reply...", key=reply_key)
+                        if st.button("Send", key=f"btn_{c['id']}"):
+                            if new_reply:
+                                c['messages'].append({"role": "Citizen", "text": new_reply, "time": time.ctime()})
+                                c['last_updated'] = time.ctime()
+                                save_complaints(complaints)
+                                st.rerun()
+
+        elif "Admin Inbox" in tab_name:
+            st.subheader("📥 Smart City Grievance Center")
+            st.markdown("Manage incoming citizen complaints and provide real-time assistance.")
+            
+            complaints = load_complaints()
+            
+            if not complaints:
+                st.info("No active complaints in the inbox.")
+            else:
+                # Stats
+                avg_sev = sum(c['severity'] for c in complaints) / len(complaints)
+                st.metric("Total Active Threads", len(complaints), delta=f"Avg Severity {avg_sev:.1f}")
+                
+                # Inbox List
+                for c in reversed(complaints):
+                    with st.expander(f"[{c['area']}] {c['subject']} - Severity {c['severity']}", expanded=False):
+                        st.info(f"**Location:** {c['society']}, {c['area']} | **Last Update:** {c['last_updated']}")
+                        
+                        # Thread history
+                        for msg in c['messages']:
+                            with st.chat_message("user" if msg['role']=="Citizen" else "assistant"):
+                                st.markdown(f"**{msg['role']}:** {msg['text']}")
+                                st.caption(msg['time'])
+                        
+                        # Admin Reply
+                        reply_key_admin = f"admin_reply_{c['id']}"
+                        admin_reply_text = st.text_area("Administrative Response", key=reply_key_admin)
+                        col1, col2 = st.columns([1, 4])
+                        with col1:
+                            if st.button("Post Reply", key=f"admin_btn_{c['id']}"):
+                                if admin_reply_text:
+                                    c['messages'].append({"role": "Admin", "text": admin_reply_text, "time": time.ctime()})
+                                    c['last_updated'] = time.ctime()
+                                    save_complaints(complaints)
+                                    st.success("Reply posted.")
+                                    st.rerun()
+                        with col2:
+                            if st.button("Mark as Resolved", key=f"close_btn_{c['id']}"):
+                                c['status'] = "Closed"
+                                save_complaints(complaints)
+                                st.success("Thread closed.")
+                                st.rerun()
