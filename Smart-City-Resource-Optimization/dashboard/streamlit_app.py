@@ -108,9 +108,9 @@ def get_dashboard_data():
     # Water Data
     peaks = analyze_peak_usage(water_df)
     latest_water = water_df[water_df['timestamp'] >= water_df['timestamp'].max() - pd.Timedelta(days=1)].copy()
-    latest_water_scored, _ = train_leak_detection_model(latest_water)
+    latest_water_scored, _ = train_leak_detection_model(latest_water, base_path=project_root)
     water_anomalies = latest_water_scored[latest_water_scored['leak_risk_level'] == "High Risk"]
-    water_demand, _ = train_demand_prediction_model(water_df)
+    water_demand, _ = train_demand_prediction_model(water_df, base_path=project_root)
     
     # Disease Data
     disease_alerts = generate_disease_alerts(disease_df)
@@ -124,7 +124,12 @@ def get_dashboard_data():
         "disease": {"alerts": disease_alerts, "weekly": weekly_disease}
     }
 
-data = get_dashboard_data()
+try:
+    data = get_dashboard_data()
+except Exception as e:
+    st.error(f"🚨 Dashboard Data Loading Error: {e}")
+    st.info("Check if all data files exist in 'data/raw/' and all environment variables are set.")
+    st.stop()
 
 # -----------------
 # Citizen Simulation & Awareness Sidebar

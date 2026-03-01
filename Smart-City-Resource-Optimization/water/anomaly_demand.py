@@ -16,11 +16,12 @@ def analyze_peak_usage(df: pd.DataFrame) -> pd.DataFrame:
     peak_usage = df.groupby('hour')['flow_rate_lpm'].mean().reset_index()
     return peak_usage
 
-def train_leak_detection_model(df: pd.DataFrame, model_path="models/water_anomaly_model.pkl"):
+def train_leak_detection_model(df: pd.DataFrame, model_path="models/water_anomaly_model.pkl", base_path=""):
     """
     Train an Isolation Forest for leak detection based on pressure, flow rate, and quality.
     Features: pressure_psi, flow_rate_lpm, turbidity_ntu, chlorine_mgl, pH
     """
+    full_model_path = os.path.join(base_path, model_path)
     features = ['pressure_psi', 'flow_rate_lpm', 'turbidity_ntu', 'chlorine_mgl', 'pH']
     X = df[features].copy()
     
@@ -31,8 +32,8 @@ def train_leak_detection_model(df: pd.DataFrame, model_path="models/water_anomal
     model = IsolationForest(contamination=0.05, random_state=42)
     model.fit(X)
     
-    os.makedirs(os.path.dirname(model_path), exist_ok=True)
-    with open(model_path, "wb") as f:
+    os.makedirs(os.path.dirname(full_model_path), exist_ok=True)
+    with open(full_model_path, "wb") as f:
         pickle.dump(model, f)
         
     # Generate scores
@@ -42,12 +43,11 @@ def train_leak_detection_model(df: pd.DataFrame, model_path="models/water_anomal
     
     return df, model
 
-def train_demand_prediction_model(df: pd.DataFrame, model_path="models/water_demand_model.pkl"):
+def train_demand_prediction_model(df: pd.DataFrame, model_path="models/water_demand_model.pkl", base_path=""):
     """
     Train a simple Linear Regression to predict next day demand.
-    Since this is a simple hackathon version, we aggregate daily flow_rate
-    and predict next day based on the previous day.
     """
+    full_model_path = os.path.join(base_path, model_path)
     if not pd.api.types.is_datetime64_any_dtype(df['timestamp']):
         df['timestamp'] = pd.to_datetime(df['timestamp'])
         
@@ -70,10 +70,10 @@ def train_demand_prediction_model(df: pd.DataFrame, model_path="models/water_dem
     model = LinearRegression()
     model.fit(X_train, y_train)
     
-    os.makedirs(os.path.dirname(model_path), exist_ok=True)
-    with open(model_path, "wb") as f:
+    os.makedirs(os.path.dirname(full_model_path), exist_ok=True)
+    with open(full_model_path, "wb") as f:
         pickle.dump(model, f)
-        
+    
     return daily_demand, model
 
 if __name__ == "__main__":

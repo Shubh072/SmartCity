@@ -78,8 +78,9 @@ def generate_area_risk_table(waste_df: pd.DataFrame, water_df: pd.DataFrame, dis
     risk_table['cross_domain_alert'] = cross_alerts
     risk_table = risk_table.sort_values(by='final_risk_score', ascending=False)
     
-    os.makedirs("outputs/predictions", exist_ok=True)
-    risk_table.to_csv("outputs/predictions/unified_risk_table.csv", index=False)
+    outputs_dir = os.path.join(base_path, "outputs/predictions")
+    os.makedirs(outputs_dir, exist_ok=True)
+    risk_table.to_csv(os.path.join(outputs_dir, "unified_risk_table.csv"), index=False)
     return risk_table
 
 def get_city_health_score(risk_table: pd.DataFrame) -> float:

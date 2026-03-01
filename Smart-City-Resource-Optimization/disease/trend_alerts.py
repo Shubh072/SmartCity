@@ -16,11 +16,12 @@ def aggregate_disease_data(df: pd.DataFrame) -> pd.DataFrame:
     weekly = weekly.sort_values(by=['area', 'disease', 'week_start'])
     return weekly
 
-def train_disease_trend_model(df: pd.DataFrame, model_path="models/disease_trend_model.pkl"):
+def train_disease_trend_model(df: pd.DataFrame, model_path="models/disease_trend_model.pkl", base_path=""):
     """
     Train a simple Linear Regression model for trend prediction.
     Features: lag_1_week, lag_2_week
     """
+    full_model_path = os.path.join(base_path, model_path)
     weekly = aggregate_disease_data(df)
     
     # Create lag features
@@ -39,8 +40,8 @@ def train_disease_trend_model(df: pd.DataFrame, model_path="models/disease_trend
     model = LinearRegression()
     model.fit(X, y)
     
-    os.makedirs(os.path.dirname(model_path), exist_ok=True)
-    with open(model_path, "wb") as f:
+    os.makedirs(os.path.dirname(full_model_path), exist_ok=True)
+    with open(full_model_path, "wb") as f:
         pickle.dump(model, f)
         
     return weekly, model
