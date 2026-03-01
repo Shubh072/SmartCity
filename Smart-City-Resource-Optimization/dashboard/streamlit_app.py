@@ -123,17 +123,42 @@ def get_dashboard_data():
 data = get_dashboard_data()
 
 # -----------------
-# Citizen Simulation Sidebar
+# Citizen Simulation & Awareness Sidebar
 # -----------------
 with st.sidebar:
     st.header("📲 Citizen App")
-    st.markdown("Simulate citizen reports from the ground.")
+    
+    # 1. Action: Reporting
+    st.subheader("Report Issue")
     if st.button("🚨 Report Overflowing Bin in Baner", use_container_width=True):
         st.session_state['citizen_report_baner'] = True
         st.success("Report received!")
     if st.button("🔄 Reset Reports", use_container_width=True):
         st.session_state['citizen_report_baner'] = False
         st.rerun()
+    
+    st.divider()
+    
+    # 2. Awareness: Personal Impact Calculator
+    st.subheader("🌱 My Impact Calculator")
+    st.caption("Calculate your contribution to CO2 reduction.")
+    paper = st.number_input("Paper recycled (kg)", min_value=0.0, value=0.0, step=0.5)
+    plastic = st.number_input("Plastic recycled (kg)", min_value=0.0, value=0.0, step=0.5)
+    
+    # Simple conversion: 1kg paper ~ 1.5kg CO2 saved, 1kg plastic ~ 2.5kg CO2 saved
+    personal_co2_saved = (paper * 1.5) + (plastic * 2.5)
+    st.metric("My CO2 Saved", f"{personal_co2_saved:.1f} kg")
+    
+    st.divider()
+    
+    # 3. Education: Segregation Guide
+    with st.expander("♻️ Waste Segregation Guide"):
+        st.markdown("""
+        **🟢 Wet Waste (Biodegradable):** Food scraps, fruit peels, flowers.
+        **🔵 Dry Waste (Recyclable):** Paper, plastic, metal, dry glass.
+        **🔴 Domestic Hazardous:** Batteries, cleaning agents, paint.
+        **🟡 E-Waste:** Cables, mobile parts, old batteries.
+        """)
 
 # Inject Citizen Data
 if st.session_state.get('citizen_report_baner', False):
@@ -242,7 +267,7 @@ st.divider()
 # -----------------
 # Main Tabs
 # -----------------
-tabs_list = ["🗺️ City Map", "🏥 Public Health"]
+tabs_list = ["🗺️ City Map", "🏥 Public Health", "🏆 Leaderboard"]
 if st.session_state['role'] in ["Super Admin", "Admin"]:
     tabs_list.extend(["🚛 Waste Routing", "💧 Water Infrastructure"])
 if st.session_state['role'] == "Super Admin":
@@ -341,6 +366,25 @@ for i, tab_name in enumerate(tabs_list):
                 filtered = data["disease"]["weekly"][data["disease"]["weekly"]['disease'] == selected_disease]
                 fig3 = px.line(filtered, x='week_start', y='cases', color='area', title=f"{selected_disease} Trends")
                 st.plotly_chart(fig3, use_container_width=True)
+
+        elif "Leaderboard" in tab_name:
+            st.subheader("Community Green Leaderboard")
+            st.markdown("Ranking city areas based on waste management and infrastructure health.")
+            
+            # Create a mock leaderboard based on risk scores (lower risk = better rank)
+            leaderboard_df = data["risk_table"][['area', 'final_risk_score']].copy()
+            leaderboard_df['cleanliness_score'] = 100 - leaderboard_df['final_risk_score']
+            leaderboard_df = leaderboard_df.sort_values('cleanliness_score', ascending=False).reset_index(drop=True)
+            leaderboard_df.index += 1
+            
+            # Highlight top area
+            top_area = leaderboard_df.iloc[0]['area']
+            st.success(f"🏆 **{top_area}** is currently the cleanest area in the city!")
+            
+            # Display table with medals
+            leaderboard_df['Rank'] = leaderboard_df.index.map(lambda x: f"🥇 {x}" if x==1 else (f"🥈 {x}" if x==2 else (f"🥉 {x}" if x==3 else str(x))))
+            st.table(leaderboard_df[['Rank', 'area', 'cleanliness_score']].rename(columns={'area': 'Neighborhood', 'cleanliness_score': 'Eco Score'}))
+
 
         elif "City CFO (ROI)" in tab_name:
             st.subheader("City CFO: ROI & Environmental Impact")
